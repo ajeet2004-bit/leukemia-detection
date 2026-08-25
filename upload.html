@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blood Cancer Detection</title>
+
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #eef2f3, #dfe9f3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* main card */
+.container {
+    background: white;
+    padding: 30px;
+    border-radius: 18px;
+    width: 420px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+/* upload box */
+.upload-box {
+    border: 2px dashed #4CAF50;
+    padding: 25px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: 500;
+}
+
+.upload-box:hover {
+    background: #f4fff7;
+}
+
+/* preview image */
+#preview {
+    margin-top: 15px;
+    width: 100%;
+    border-radius: 10px;
+    display: none;
+}
+
+/* button */
+button {
+    margin-top: 20px;
+    padding: 10px 30px;
+    border: none;
+    background: #4CAF50;
+    color: white;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #43a047;
+}
+
+/* loader */
+#loader {
+    margin-top: 15px;
+    display: none;
+    font-weight: bold;
+}
+
+/* result box */
+#result {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    display: none;
+    font-weight: bold;
+}
+
+.benign {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.malignant {
+    background: #ffebee;
+    color: #c62828;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>🩸 Blood Cancer Detection</h1>
+
+    <div class="upload-box" id="uploadBox">
+        Click to Upload Image
+    </div>
+
+    <input type="file" id="fileInput" hidden>
+
+    <img id="preview">
+
+    <button onclick="uploadImage()">Predict</button>
+
+    <div id="loader">⏳ Processing...</div>
+    <div id="result"></div>
+</div>
+
+<script>
+const fileInput = document.getElementById("fileInput");
+const uploadBox = document.getElementById("uploadBox");
+const preview = document.getElementById("preview");
+
+let selectedFile;
+
+// open file picker
+uploadBox.addEventListener("click", () => {
+    fileInput.click();
+});
+
+// preview image
+fileInput.addEventListener("change", (event) => {
+    selectedFile = event.target.files[0];
+
+    if (selectedFile) {
+        preview.src = URL.createObjectURL(selectedFile);
+        preview.style.display = "block";
+    }
+});
+
+// send to backend
+async function uploadImage() {
+    if (!selectedFile) {
+        alert("Please upload an image first!");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("file", selectedFile);
+
+    document.getElementById("loader").style.display = "block";
+    document.getElementById("result").style.display = "none";
+
+    try {
+        const response = await fetch("http://127.0.0.1:5000/predict", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        document.getElementById("loader").style.display = "none";
+
+        let resultDiv = document.getElementById("result");
+
+        const isBenign = data.prediction.includes("Benign");
+
+        resultDiv.className = isBenign ? "benign" : "malignant";
+        resultDiv.style.display = "block";
+
+        resultDiv.innerHTML = `
+            Prediction: ${data.prediction} <br>
+            Confidence: ${((data.confidence * 100).toFixed(2))}%
+        `;
+
+    } catch (error) {
+        document.getElementById("loader").innerText = "Server Error";
+    }
+}
+</script>
+
+</body>
+</html>
